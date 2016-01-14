@@ -23,6 +23,8 @@ _me=""
 _partner=""
 _outfilename=""
 
+_class=""
+
 class col:
   BLN      ='\033[0m'            # Blank
   UND      ='\033[1;4m'          # Underlined
@@ -37,38 +39,38 @@ class col:
   CYN      ='\033[1;36m'         # Cyan
   WHT      ='\033[1;37m'         # White
 
-def htmlwrite(s):
+def hp(s):
   OUTFILE.write(s+"\n")
 def htmlopen():
   global OUTFILE
   OUTFILE = open(_outfilename,'w')
-  htmlwrite("<!DOCTYPE html>")
-  htmlwrite('<head>')
-  htmlwrite('<meta charset="UTF-8">')
-  htmlwrite('<link rel="stylesheet" type="text/css" href="assets/style.css">')
-  htmlwrite('<script src="./assets/jquery-2.2.0.min.js"></script>')
-  htmlwrite('<script type="text/javascript">')
-  htmlwrite('$(document).ready(function(){')
+  hp("<!DOCTYPE html>")
+  hp('<head>')
+  hp('<meta charset="UTF-8">')
+  hp('<link rel="stylesheet" type="text/css" href="assets/style.css">')
+  hp('<script src="./assets/jquery-2.2.0.min.js"></script>')
+  hp('<script type="text/javascript">')
+  hp('$(document).ready(function(){')
 
-  # htmlwrite("$('.newday').nextUntil('tr.newday').hide();")
+  # hp("$('.newday').nextUntil('tr.newday').hide();")
 
-  htmlwrite("$('tr.toggleall').click(function(){")
-  htmlwrite("  $('table').hide();")
-  htmlwrite("  $('.newday').nextUntil('tr.newday').toggle();")
-  htmlwrite("  $('table').show();")
-  htmlwrite("});")
+  hp("$('tr.toggleall').click(function(){")
+  hp("  $('table').hide();")
+  hp("  $('.newday').nextUntil('tr.newday').toggle();")
+  hp("  $('table').show();")
+  hp("});")
 
-  htmlwrite("$('tr.newday').click(function(){")
-  htmlwrite("  $(this).nextUntil('tr.newday').toggle();")
-  htmlwrite("});")
-  htmlwrite("});")
+  hp("$('tr.newday').click(function(){")
+  hp("  $(this).nextUntil('tr.newday').toggle();")
+  hp("});")
+  hp("});")
 
-  htmlwrite('</script>')
+  hp('</script>')
 
-  htmlwrite('</head>')
-  htmlwrite('<body class="document">')
+  hp('</head>')
+  hp('<body class="document">')
 def htmlclose():
-  htmlwrite('</body>')
+  hp('</body>')
   OUTFILE.close()
 
 def numdate(ts):
@@ -82,46 +84,74 @@ def fulldate(ts):
 
 def handlenormal(m):
   # print(col.WHT + "   " + html.unescape(m[4]) + col.BLN)
-  htmlwrite("<td class=\"hideable\">")
-  htmlwrite(m[3])
-  htmlwrite("</td>")
-  htmlwrite('<td title="'+_title+'">')
-  htmlwrite(m[4])
+  hp('<tr class="'+_class+'">')
+  hp("<td class=\"hideable\">")
+  hp(timeonly(m[2]))
+  hp("</td>")
+
+  hp("<td class=\"hideable\">")
+  hp(m[3])
+  hp("</td>")
+  hp('<td title="'+_title+'">')
+  hp(m[4])
+  hp("</td>")
 
 def handleme(m):
   # print(col.YLW + "   " + m[4] + col.BLN)
-  htmlwrite('<td class="mecommand" colspan="2" title="'+_title+'">')
-  htmlwrite(m[3] + ' ' + m[4])
+  hp('<tr class="large '+_class+'">')
+  hp("<td class=\"hideable\">")
+  hp(timeonly(m[2]))
+  hp("</td>")
+
+  i=m[3] + ' ' + m[4] + "</td>"
+
+  hp('<td class="mecommand" colspan="2" title="'+_title+'">')
+  hp(i)
+
+  hp('<tr class="small '+_class+'">')
+  hp('<td></td><td></td><td class="mecommand" title="'+_title+'">')
+  hp(i)
 
 def handleimage(m):
+  hp('<tr class="large '+_class+'">')
+  hp("<td class=\"hideable\">")
+  hp(timeonly(m[2]))
+  hp("</td>")
+
   url=re.search(r'''uri=\"(.*?)\"''',m[4]).group(1)+ "/views/imgpsh_fullsize"
   # print(col.MGN + "   " + url + col.BLN)
-  htmlwrite('<td class="inlineimage" colspan="2" title="'+_title+'">')
-  htmlwrite(m[3] + ' sent an image: ' + "<a href=\""+url+"\">"+url+"</a>")
+
+  i=m[3] + ' sent an image: ' + "<a href=\""+url+"\">"+url+"</a></td>"
+
+  hp('<td class="inlineimage" colspan="2" title="'+_title+'">')
+  hp(i)
+
+  hp('<tr class="small '+_class+'">')
+  hp('<td></td><td></td><td class="inlineimage" title="'+_title+'">')
+  hp(i)
+
+def largesmallrow(classes,html):
+  hp('<tr class="large '+classes+'"><td colspan="3">'+html+'</td></tr>')
+  hp('<tr class="small '+classes+'"><td></td><td></td><td>'+html+'</td></tr>')
 
 def parseline(m):
-  global _lastdate, _title
+  global _lastdate, _title, _class
   if (m[0] != 61 and m[0] != 60 and m[0] != 201):
     return
 
   newdate = numdate(m[2])
   if _lastdate != newdate:
-    htmlwrite('<tr class="newday">')
-    htmlwrite('<td colspan="3">'+fulldate(m[2])+'</td>')
-    htmlwrite('</tr>')
+    largesmallrow("newday",fulldate(m[2]))
     _lastdate = newdate
 
   _title="From "+m[3]+" on "+fulldate(m[2])+" at "+timeonly(m[2])
 
   if m[1] == _me:
     color = col.GRN
-    htmlwrite('<tr class="myself">')
+    _class="myself"
   else:
     color = col.CYN
-    htmlwrite('<tr class="other">')
-  htmlwrite("<td class=\"hideable\">")
-  htmlwrite(timeonly(m[2]))
-  htmlwrite("</td>")
+    _class="other"
 
   if (m[0] == 61):
     handlenormal(m)
@@ -130,14 +160,13 @@ def parseline(m):
   if (m[0] == 201):
     handleimage(m)
 
-  htmlwrite('</tr>')
+  hp('</tr>')
 
 #Configure command line arguments for the parser
 def configParser():
   parser = argparse.ArgumentParser()
   # mode = parser.add_mutually_exclusive_group()
   # mode.add_argument("-c", "--clear",    help="clear the logfile",                  action="store_true")
-  # parser.add_argument("--persist",      help="don't close messages until clicked", action="store_true")
   parser.add_argument("-u", "--user",    type=str,   help="your Skype username", required=True)
   parser.add_argument("-p", "--partner", type=str,   help="conversation partner's username")
   parser.add_argument("-a", "--all",                 help="dump all single user conversations", action="store_true")
@@ -161,13 +190,13 @@ def dumppartner(part,cursor):
   )
 
   htmlopen()
-  htmlwrite('<table>')
-  htmlwrite('<tr class="toggleall"><td colspan="3">Click here to expand / collapse all days</td></tr>')
+  hp('<table>')
+  largesmallrow("toggleall","Click here to expand / collapse all days")
 
   for m in c.fetchall():
     parseline(m)
 
-  htmlwrite('</table>')
+  hp('</table>')
   htmlclose()
 
 def main():
